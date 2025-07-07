@@ -134,8 +134,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           const newValue = base + suggestion;
           if (newValue === query) {
             handleSubmitAndClear(newValue);
-          }
-          else {
+          } else {
             buffer.setText(newValue);
           }
         }
