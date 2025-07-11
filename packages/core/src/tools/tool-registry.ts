@@ -309,8 +309,9 @@ export class ToolRegistry {
    * Returns an array of all registered and discovered tool instances.
    */
   getAllTools(): Tool[] {
-    return Array.from(this.tools.values()).sort((a, b) => a.displayName
-    .localeCompare(b.displayName));
+    return Array.from(this.tools.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    );
   }
 
   /**
