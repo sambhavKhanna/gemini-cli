@@ -7,7 +7,7 @@
 import updateNotifier from 'update-notifier';
 import semver from 'semver';
 import { getPackageJson } from '../../utils/package.js';
-import { spawn } from 'child_process';
+import * as child_process from 'child_process';
 
 export async function checkForUpdates(): Promise<string | null> {
   try {
@@ -51,9 +51,13 @@ export function applyUpdate(): Promise<void> {
         if (!packageJson || !packageJson.name) {
           return resolve();
         }
-        const child = spawn('npm', ['install', '-g', packageJson.name], {
-          stdio: 'inherit',
-        });
+        const child = child_process.spawn(
+          'npm',
+          ['install', '-g', packageJson.name],
+          {
+            stdio: 'inherit',
+          },
+        );
 
         child.on('close', (code) => {
           if (code === 0) {
