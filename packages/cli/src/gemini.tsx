@@ -40,6 +40,7 @@ import {
 import { validateAuthMethod } from './config/auth.js';
 import { setMaxSizedBoxDebugging } from './ui/components/shared/MaxSizedBox.js';
 import { validateNonInteractiveAuth } from './validateNonInterActiveAuth.js';
+import { applyUpdate, checkForUpdates } from './ui/utils/updateCheck.js';
 
 function getNodeMemoryArgs(config: Config): string[] {
   const totalMemoryMB = os.totalmem() / (1024 * 1024);
@@ -87,6 +88,25 @@ async function relaunchWithAdditionalArgs(additionalArgs: string[]) {
 import { runAcpPeer } from './acp/acpPeer.js';
 
 export async function main() {
+  const updateInfo = await checkForUpdates();
+  if (updateInfo) {
+    console.log(updateInfo);
+    console.log('Applying update...');
+    try {
+      await applyUpdate();
+      console.log('Update applied successfully. Restarting...');
+      // Relaunch to apply the update.
+      const child = spawn(process.execPath, process.argv.slice(1), {
+        detached: true,
+        stdio: 'inherit',
+      });
+      child.unref();
+      return process.exit(0);
+    } catch (_e) {
+      console.error('Failed to apply update automatically.');
+      console.error('Please run `npm install -g @google/gemini-cli` manually.');
+    }
+  }
   const workspaceRoot = process.cwd();
   const settings = loadSettings(workspaceRoot);
 

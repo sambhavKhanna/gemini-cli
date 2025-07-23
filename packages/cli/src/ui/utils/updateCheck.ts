@@ -7,6 +7,7 @@
 import updateNotifier from 'update-notifier';
 import semver from 'semver';
 import { getPackageJson } from '../../utils/package.js';
+import { spawn } from 'child_process';
 
 export async function checkForUpdates(): Promise<string | null> {
   try {
@@ -24,8 +25,7 @@ export async function checkForUpdates(): Promise<string | null> {
         name: packageJson.name,
         version: packageJson.version,
       },
-      // check every time
-      updateCheckInterval: 0,
+      updateCheckInterval: 1000 * 60 * 60 * 24,
       // allow notifier to run in scripts
       shouldNotifyInNpmScript: true,
     });
@@ -34,7 +34,7 @@ export async function checkForUpdates(): Promise<string | null> {
       notifier.update &&
       semver.gt(notifier.update.latest, notifier.update.current)
     ) {
-      return `Gemini CLI update available! ${notifier.update.current} → ${notifier.update.latest}\nRun npm install -g ${packageJson.name} to update`;
+      return `Gemini CLI update available! ${notifier.update.current} → ${notifier.update.latest}`;
     }
 
     return null;
@@ -42,4 +42,31 @@ export async function checkForUpdates(): Promise<string | null> {
     console.warn('Failed to check for updates: ' + e);
     return null;
   }
+}
+
+export function applyUpdate(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    getPackageJson()
+      .then((packageJson) => {
+        if (!packageJson || !packageJson.name) {
+          return resolve();
+        }
+        const child = spawn('npm', ['install', '-g', packageJson.name], {
+          stdio: 'inherit',
+        });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`Update failed with exit code ${code}`));
+          }
+        });
+
+        child.on('error', (err) => {
+          reject(err);
+        });
+      })
+      .catch(reject);
+  });
 }
