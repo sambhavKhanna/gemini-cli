@@ -29,7 +29,8 @@ export async function checkForUpdates(): Promise<string | null> {
       // allow notifier to run in scripts
       shouldNotifyInNpmScript: true,
     });
-    const updateInfo = await notifier.fetchInfo();
+    const timeout = new Promise<null>((resolve) => setTimeout(resolve, 2000, null));
+    const updateInfo = await Promise.race([notifier.fetchInfo(), timeout]);
 
     if (updateInfo && semver.gt(updateInfo.latest, updateInfo.current)) {
       return `Gemini CLI update available! ${updateInfo.current} → ${updateInfo.latest}\nRun npm install -g ${packageJson.name} to update`;
