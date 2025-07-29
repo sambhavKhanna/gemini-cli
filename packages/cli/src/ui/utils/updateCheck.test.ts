@@ -120,7 +120,7 @@ describe('checkForUpdates', () => {
           new Promise((resolve) => {
             setTimeout(() => {
               resolve({ current: '1.0.0', latest: '1.1.0' });
-            }, FETCH_TIMEOUT_MS +1);
+            }, FETCH_TIMEOUT_MS + 1);
           }),
       ),
     });
