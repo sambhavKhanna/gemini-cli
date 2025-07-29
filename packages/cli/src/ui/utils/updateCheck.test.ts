@@ -5,7 +5,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { checkForUpdates } from './updateCheck.js';
+import { checkForUpdates, FETCH_TIMEOUT_MS } from './updateCheck.js';
 
 const getPackageJson = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/package.js', () => ({
@@ -19,9 +19,15 @@ vi.mock('update-notifier', () => ({
 
 describe('checkForUpdates', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     vi.resetAllMocks();
     // Clear DEV environment variable before each test
     delete process.env.DEV;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('should return null when running from source (DEV=true)', async () => {
@@ -69,8 +75,10 @@ describe('checkForUpdates', () => {
         .fn()
         .mockResolvedValue({ current: '1.0.0', latest: '1.1.0' }),
     });
+
     const result = await checkForUpdates();
-    expect(result).toContain('1.0.0 → 1.1.0');
+    expect(result?.message).toContain('1.0.0 → 1.1.0');
+    expect(result?.update).toEqual({ current: '1.0.0', latest: '1.1.0' });
   });
 
   it('should return null if the latest version is the same as the current version', async () => {
@@ -98,6 +106,27 @@ describe('checkForUpdates', () => {
         .mockResolvedValue({ current: '1.1.0', latest: '1.0.0' }),
     });
     const result = await checkForUpdates();
+    expect(result).toBeNull();
+  });
+
+  it('should return null if fetchInfo times out', async () => {
+    getPackageJson.mockResolvedValue({
+      name: 'test-package',
+      version: '1.0.0',
+    });
+    updateNotifier.mockReturnValue({
+      fetchInfo: vi.fn(
+        async () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({ current: '1.0.0', latest: '1.1.0' });
+            }, FETCH_TIMEOUT_MS +1);
+          }),
+      ),
+    });
+    const promise = checkForUpdates();
+    await vi.advanceTimersByTimeAsync(FETCH_TIMEOUT_MS);
+    const result = await promise;
     expect(result).toBeNull();
   });
 
